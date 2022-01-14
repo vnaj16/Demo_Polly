@@ -1,7 +1,25 @@
+using Microsoft.Extensions.DependencyInjection;
+using Polly.Extensions.Http;
+using Polly;
+
+IAsyncPolicy<HttpResponseMessage> GetRetryPolicy()
+{
+    return HttpPolicyExtensions
+        // HttpRequestException, 5XX and 408  
+        .HandleTransientHttpError()
+        // 404  
+        .OrResult(msg => msg.StatusCode == System.Net.HttpStatusCode.NotFound)
+        // Retry two times after delay  
+        .WaitAndRetryAsync(6, retryAttempt => TimeSpan.FromSeconds(Math.Pow(2, retryAttempt)));
+}
+
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
+builder.Services.AddHttpClient("PolicyWithHttpFactory")
+        .SetHandlerLifetime(TimeSpan.FromMinutes(5))
+        .AddPolicyHandler(GetRetryPolicy());
 
 var app = builder.Build();
 

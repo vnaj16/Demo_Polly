@@ -11,12 +11,14 @@ namespace Demo_Polly.Controllers
         private readonly ILogger<HomeController> _logger;
         private readonly ApiConsumerService apiConsumerService;
         private readonly FileReaderService fileReaderService;
+        private readonly IHttpClientFactory _clientFactory;
 
-        public HomeController(ILogger<HomeController> logger)
+        public HomeController(ILogger<HomeController> logger, IHttpClientFactory clientFactory)
         {
             _logger = logger;
             apiConsumerService = new();
             fileReaderService = new();
+            _clientFactory = clientFactory;
         }
 
         public IActionResult Index()
@@ -27,6 +29,16 @@ namespace Demo_Polly.Controllers
         public IActionResult Privacy()
         {
             return View();
+        }
+
+        public async Task<ActionResult> PollyAndHttpClientFactory()
+        {
+            var url = @"https://v2.jokeapi.dev/joke/Any?lang=es";
+
+            var client = _clientFactory.CreateClient("PolicyWithHttpFactory");
+            var response = await client.GetAsync(url);
+            var result = await response.Content.ReadAsStringAsync();
+            return Json(result);
         }
 
         public async Task<IActionResult> ConsumeAPI()
